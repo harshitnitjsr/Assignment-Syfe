@@ -1,0 +1,169 @@
+# WordPress Application Helm Chart Values
+
+# Global settings
+global:
+  storageClass: "nfs-client" # Change to your RWX storage class
+
+# Namespace
+namespace: wordpress
+
+# Docker images
+images:
+  wordpress:
+    repository: wordpress
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  mysql:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  
+  nginx:
+    repository: nginx
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  redis:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+
+# WordPress configuration
+wordpress:
+  replicaCount: 3
+  
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  
+  persistence:
+    enabled: true
+    size: 10Gi
+    accessMode: ReadWriteMany
+    storageClass: "nfs-client"
+  
+  env:
+    WORDPRESS_DB_HOST: "mysql"
+    WORDPRESS_DB_NAME: "wordpress"
+    WORDPRESS_DB_USER: "wordpress"
+    WORDPRESS_TABLE_PREFIX: "wp_"
+    WORDPRESS_DEBUG: "false"
+    REDIS_HOST: "redis"
+    REDIS_PORT: "6379"
+
+# MySQL configuration
+mysql:
+  enabled: true
+  replicaCount: 1
+  
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  
+  persistence:
+    enabled: true
+    size: 20Gi
+    accessMode: ReadWriteOnce
+    storageClass: "standard"
+  
+  env:
+    MYSQL_ROOT_PASSWORD: "wordpress123"
+    MYSQL_DATABASE: "wordpress"
+    MYSQL_USER: "wordpress"
+    MYSQL_PASSWORD: "wordpress123"
+
+# Nginx configuration
+nginx:
+  replicaCount: 2
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 80
+
+# Redis configuration
+redis:
+  enabled: true
+  replicaCount: 1
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  
+  persistence:
+    enabled: true
+    size: 5Gi
+
+# Service Account
+serviceAccount:
+  create: true
+  name: wordpress-sa
+
+# Ingress
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: wordpress.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: wordpress-tls
+      hosts:
+        - wordpress.example.com
+
+# Monitoring
+monitoring:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+  
+  podMonitor:
+    enabled: true
+
+# Security
+podSecurityContext:
+  fsGroup: 2000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+
+# Network Policy
+networkPolicy:
+  enabled: true

@@ -1,0 +1,68 @@
+# Local Development Values for Monitoring Stack
+# Use these values for Docker Desktop / Minikube / Kind
+
+namespace: monitoring
+
+# Prometheus Configuration
+prometheus:
+  replicas: 1
+  replicaCount: 1  # Ensure single Prometheus pod
+  image:
+    repository: prom/prometheus
+    tag: v2.45.0
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort  # Changed from ClusterIP
+    port: 9090
+    nodePort: 30090  # Access via http://localhost:30090
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "1000m"
+  retention: 7d  # Reduced from 15d for local
+  storageSize: 5Gi  # Reduced from 20Gi
+
+# Grafana Configuration
+grafana:
+  enabled: false  # Disabled locally per request
+  replicas: 0
+  image:
+    repository: grafana/grafana
+    tag: "10.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort  # Changed from ClusterIP
+    port: 3000
+    nodePort: 30300  # Access via http://localhost:30300
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+  adminUser: admin
+  adminPassword: admin123
+  storageSize: 2Gi  # Reduced from 10Gi
+
+# Storage Configuration - LOCAL
+persistence:
+  prometheus:
+    enabled: true
+    storageClass: "hostpath"  # For Docker Desktop
+    # For Minikube use: "standard"
+    # For Kind use: "standard"
+    accessMode: ReadWriteOnce
+    size: 5Gi
+  grafana:
+    enabled: true
+    storageClass: "hostpath"
+    accessMode: ReadWriteOnce
+    size: 2Gi
+
+# RBAC
+rbac:
+  create: true

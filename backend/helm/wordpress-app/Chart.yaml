@@ -1,0 +1,19 @@
+apiVersion: v2
+name: wordpress-app
+description: Production-grade WordPress application with Nginx, MySQL, and Redis
+type: application
+version: 1.0.0
+appVersion: "6.4"
+
+keywords:
+  - wordpress
+  - nginx
+  - mysql
+  - openresty
+  - php
+
+maintainers:
+  - name: Syfe DevOps Team
+    email: devops@syfe.com
+
+dependencies: []

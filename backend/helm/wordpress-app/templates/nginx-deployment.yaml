@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: nginx
+spec:
+  replicas: {{ .Values.nginx.replicaCount }}
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9145"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: nginx
+        image: "{{ .Values.images.nginx.repository }}:{{ .Values.images.nginx.tag }}"
+        imagePullPolicy: {{ .Values.images.nginx.pullPolicy }}
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 9145
+          name: metrics
+        volumeMounts:
+        - name: wordpress-storage
+          mountPath: /var/www/html
+          readOnly: true
+        resources:
+          {{- toYaml .Values.nginx.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: wordpress-storage
+        {{- if .Values.wordpress.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: wordpress-pvc
+        {{- else }}
+        emptyDir: {}
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: nginx
+spec:
+  selector:
+    app: nginx
+  ports:
+  - port: {{ .Values.nginx.service.port }}
+    targetPort: {{ .Values.nginx.service.targetPort }}
+    name: http
+    {{- if and (eq .Values.nginx.service.type "NodePort") (.Values.nginx.service.nodePort) }}
+    nodePort: {{ .Values.nginx.service.nodePort }}
+    {{- end }}
+  - port: 9145
+    targetPort: 9145
+    name: metrics
+  type: {{ .Values.nginx.service.type }}

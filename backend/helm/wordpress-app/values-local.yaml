@@ -1,0 +1,125 @@
+# Local Development Values
+# Use these values for Docker Desktop / Minikube / Kind
+
+# Namespace
+namespace: wordpress
+
+# Nginx Configuration
+nginx:
+  replicas: 1  # Reduced for local
+  replicaCount: 1  # Ensure Helm template picks up single replica
+  image:
+    repository: nginx
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort  # Changed from LoadBalancer
+    port: 80
+    nodePort: 30080  # Access via http://localhost:30080
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+# WordPress Configuration
+wordpress:
+  replicas: 1  # Reduced for local
+  replicaCount: 1  # Match template key
+  image:
+    repository: wordpress
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 9000
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "1000m"
+
+# MySQL Configuration
+mysql:
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3306
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  rootPassword: "root_password_change_me"
+  database: "wordpress"
+  user: "wordpress"
+  password: "wordpress_password_change_me"
+
+# Redis Configuration
+redis:
+  enabled: true
+  replicas: 1
+  replicaCount: 1
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6379
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "100m"
+    limits:
+      memory: "128Mi"
+      cpu: "500m"
+
+# Persistence Configuration - LOCAL STORAGE
+persistence:
+  wordpress:
+    enabled: true
+    storageClass: "hostpath"  # For Docker Desktop
+    # For Minikube use: "standard"
+    # For Kind use: "standard"
+    accessMode: ReadWriteOnce  # Changed from ReadWriteMany for local
+    size: 5Gi  # Reduced for local
+  mysql:
+    enabled: true
+    storageClass: "hostpath"
+    accessMode: ReadWriteOnce
+    size: 10Gi  # Reduced for local
+  redis:
+    enabled: true
+    storageClass: "hostpath"
+    accessMode: ReadWriteOnce
+    size: 1Gi
+
+# Horizontal Pod Autoscaler - DISABLED FOR LOCAL
+autoscaling:
+  enabled: false  # Disable HPA for local
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+# Secrets
+secrets:
+  mysqlRootPassword: "root_password_change_me"
+  mysqlPassword: "wordpress_password_change_me"
+  wordpressAuthKey: "local-auth-key-change-in-production"
+  wordpressSecureAuthKey: "local-secure-auth-key-change-in-production"
+  wordpressLoggedInKey: "local-logged-in-key-change-in-production"
+  wordpressNonceKey: "local-nonce-key-change-in-production"
+  wordpressAuthSalt: "local-auth-salt-change-in-production"
+  wordpressSecureAuthSalt: "local-secure-auth-salt-change-in-production"
+  wordpressLoggedInSalt: "local-logged-in-salt-change-in-production"
+  wordpressNonceSalt: "local-nonce-salt-change-in-production"

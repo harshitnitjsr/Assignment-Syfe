@@ -1,0 +1,150 @@
+# Local Development Values - FIXED for Docker Desktop
+# This file uses the correct structure to match the PVC templates
+
+# Namespace
+namespace: wordpress
+
+# WordPress Configuration
+wordpress:
+  replicaCount: 1  # Reduced for local
+  
+  # WordPress environment variables
+  env:
+    WORDPRESS_DB_HOST: "mysql:3306"
+    WORDPRESS_DB_NAME: "wordpress"
+    WORDPRESS_DB_USER: "wordpress"
+    REDIS_HOST: "redis"
+    REDIS_PORT: "6379"
+  
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+  
+  # Fixed persistence structure
+  persistence:
+    enabled: true
+    size: 5Gi
+    accessMode: ReadWriteOnce  # Changed from ReadWriteMany for local
+    storageClass: "hostpath"  # Use Docker Desktop's default storage class
+  
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+
+# MySQL Configuration
+mysql:
+  enabled: true
+  replicaCount: 1
+  
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  
+  # Fixed persistence structure
+  persistence:
+    enabled: true
+    size: 10Gi
+    accessMode: ReadWriteOnce
+    storageClass: "hostpath"  # Use Docker Desktop's default storage class
+  
+  env:
+    MYSQL_ROOT_PASSWORD: "wordpress123"
+    MYSQL_DATABASE: "wordpress"
+    MYSQL_USER: "wordpress"
+    MYSQL_PASSWORD: "wordpress123"
+
+# Nginx Configuration
+nginx:
+  replicaCount: 1  # Reduced for local
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  
+  service:
+    type: NodePort  # Changed from LoadBalancer
+    port: 80
+    targetPort: 80
+    nodePort: 30080  # Access via localhost:30080
+
+# Redis Configuration
+redis:
+  enabled: true
+  replicaCount: 1
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 128Mi
+  
+  # Fixed persistence structure
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: "hostpath"  # Use Docker Desktop's default storage class
+
+# Docker Images - Using our custom images
+images:
+  wordpress:
+    repository: syfe-wordpress
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  mysql:
+    repository: syfe-mysql
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  nginx:
+    repository: syfe-nginx
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  redis:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+
+# Security Context
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# Service Account
+serviceAccount:
+  create: true
+  name: wordpress-sa
+
+# Monitoring
+monitoring:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+  podMonitor:
+    enabled: true
+
+# Network Policy
+networkPolicy:
+  enabled: false  # Disabled for local development

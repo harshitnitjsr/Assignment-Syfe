@@ -1,0 +1,46 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: {{ .Values.namespace }}
+data:
+  # WordPress Overview Dashboard
+  wordpress-overview.json: |
+    {
+      "dashboard": {
+        "title": "WordPress Overview",
+        "tags": ["wordpress"],
+        "timezone": "browser",
+        "panels": [],
+        "schemaVersion": 16,
+        "version": 0
+      }
+    }
+  
+  # Nginx Performance Dashboard
+  nginx-performance.json: |
+    {
+      "dashboard": {
+        "title": "Nginx Performance",
+        "tags": ["nginx"],
+        "timezone": "browser",
+        "panels": [],
+        "schemaVersion": 16,
+        "version": 0
+      }
+    }
+  
+  # MySQL Database Dashboard
+  mysql-database.json: |
+    {
+      "dashboard": {
+        "title": "MySQL Database",
+        "tags": ["mysql"],
+        "timezone": "browser",
+        "panels": [],
+        "schemaVersion": 16,
+        "version": 0
+      }
+    }
+{{- end }}

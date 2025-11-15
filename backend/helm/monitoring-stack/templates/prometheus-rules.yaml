@@ -1,0 +1,189 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: {{ .Values.namespace }}
+data:
+  wordpress-alerts.yml: |
+    groups:
+      - name: wordpress_alerts
+        interval: 30s
+        rules:
+          # High CPU Usage Alert
+          - alert: HighPodCPUUsage
+            expr: |
+              (sum(rate(container_cpu_usage_seconds_total{namespace="wordpress"}[5m])) 
+              by (pod) / 
+              sum(container_spec_cpu_quota{namespace="wordpress"}/container_spec_cpu_period{namespace="wordpress"}) 
+              by (pod)) * 100 > 80
+            for: 5m
+            labels:
+              severity: warning
+              component: wordpress
+            annotations:
+              summary: "High CPU usage detected on {{`{{`}} $labels.pod {{`}}`}}"
+              description: "Pod {{`{{`}} $labels.pod {{`}}`}} CPU usage is above 80% (current value: {{`{{`}} $value {{`}}`}}%)"
+          
+          # High Memory Usage
+          - alert: HighPodMemoryUsage
+            expr: |
+              (sum(container_memory_working_set_bytes{namespace="wordpress"}) by (pod) / 
+              sum(container_spec_memory_limit_bytes{namespace="wordpress"}) by (pod)) * 100 > 85
+            for: 5m
+            labels:
+              severity: warning
+              component: wordpress
+            annotations:
+              summary: "High memory usage on {{`{{`}} $labels.pod {{`}}`}}"
+              description: "Pod {{`{{`}} $labels.pod {{`}}`}} memory usage is above 85% (current value: {{`{{`}} $value {{`}}`}}%)"
+          
+          # Pod Restart Alert
+          - alert: PodFrequentlyRestarting
+            expr: |
+              rate(kube_pod_container_status_restarts_total{namespace="wordpress"}[15m]) > 0
+            for: 5m
+            labels:
+              severity: warning
+              component: wordpress
+            annotations:
+              summary: "Pod {{`{{`}} $labels.pod {{`}}`}} is restarting frequently"
+              description: "Pod {{`{{`}} $labels.pod {{`}}`}} has restarted {{`{{`}} $value {{`}}`}} times in the last 15 minutes"
+          
+          # Pod Not Ready
+          - alert: PodNotReady
+            expr: |
+              kube_pod_status_ready{namespace="wordpress", condition="false"} == 1
+            for: 10m
+            labels:
+              severity: critical
+              component: wordpress
+            annotations:
+              summary: "Pod {{`{{`}} $labels.pod {{`}}`}} is not ready"
+              description: "Pod {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has been in NotReady state for more than 10 minutes"
+  
+  nginx-alerts.yml: |
+    groups:
+      - name: nginx_alerts
+        interval: 30s
+        rules:
+          # High 5xx Error Rate
+          - alert: High5xxErrorRate
+            expr: |
+              (sum(rate(nginx_http_requests_total{status=~"5.."}[5m])) / 
+              sum(rate(nginx_http_requests_total[5m]))) * 100 > 5
+            for: 5m
+            labels:
+              severity: critical
+              component: nginx
+            annotations:
+              summary: "High 5xx error rate detected"
+              description: "Nginx 5xx error rate is above 5% (current value: {{`{{`}} $value {{`}}`}}%)"
+          
+          # High 4xx Error Rate
+          - alert: High4xxErrorRate
+            expr: |
+              (sum(rate(nginx_http_requests_total{status=~"4.."}[5m])) / 
+              sum(rate(nginx_http_requests_total[5m]))) * 100 > 10
+            for: 10m
+            labels:
+              severity: warning
+              component: nginx
+            annotations:
+              summary: "High 4xx error rate detected"
+              description: "Nginx 4xx error rate is above 10% (current value: {{`{{`}} $value {{`}}`}}%)"
+          
+          # High Request Latency
+          - alert: HighRequestLatency
+            expr: |
+              histogram_quantile(0.95, 
+                rate(nginx_http_request_duration_seconds_bucket[5m])
+              ) > 3
+            for: 5m
+            labels:
+              severity: warning
+              component: nginx
+            annotations:
+              summary: "High request latency detected"
+              description: "95th percentile request latency is above 3 seconds (current value: {{`{{`}} $value {{`}}`}}s)"
+          
+          # Nginx Down
+          - alert: NginxDown
+            expr: up{job="nginx"} == 0
+            for: 1m
+            labels:
+              severity: critical
+              component: nginx
+            annotations:
+              summary: "Nginx is down"
+              description: "Nginx instance {{`{{`}} $labels.instance {{`}}`}} is down"
+  
+  mysql-alerts.yml: |
+    groups:
+      - name: mysql_alerts
+        interval: 30s
+        rules:
+          # MySQL Down
+          - alert: MySQLDown
+            expr: mysql_up == 0
+            for: 1m
+            labels:
+              severity: critical
+              component: mysql
+            annotations:
+              summary: "MySQL is down"
+              description: "MySQL instance {{`{{`}} $labels.instance {{`}}`}} is down"
+          
+          # High Connection Usage
+          - alert: MySQLHighConnectionUsage
+            expr: |
+              (mysql_global_status_threads_connected / 
+              mysql_global_variables_max_connections) * 100 > 80
+            for: 5m
+            labels:
+              severity: warning
+              component: mysql
+            annotations:
+              summary: "MySQL connection usage is high"
+              description: "MySQL connection usage is above 80% (current value: {{`{{`}} $value {{`}}`}}%)"
+          
+          # Slow Queries
+          - alert: MySQLSlowQueries
+            expr: rate(mysql_global_status_slow_queries[5m]) > 10
+            for: 5m
+            labels:
+              severity: warning
+              component: mysql
+            annotations:
+              summary: "MySQL has many slow queries"
+              description: "MySQL is experiencing {{`{{`}} $value {{`}}`}} slow queries per second"
+  
+  storage-alerts.yml: |
+    groups:
+      - name: storage_alerts
+        interval: 30s
+        rules:
+          # PVC Almost Full
+          - alert: PersistentVolumeAlmostFull
+            expr: |
+              (kubelet_volume_stats_used_bytes / 
+              kubelet_volume_stats_capacity_bytes) * 100 > 85
+            for: 10m
+            labels:
+              severity: warning
+              component: storage
+            annotations:
+              summary: "PVC {{`{{`}} $labels.persistentvolumeclaim {{`}}`}} is almost full"
+              description: "PVC {{`{{`}} $labels.persistentvolumeclaim {{`}}`}} is {{`{{`}} $value {{`}}`}}% full"
+          
+          # PVC Full
+          - alert: PersistentVolumeFull
+            expr: |
+              (kubelet_volume_stats_used_bytes / 
+              kubelet_volume_stats_capacity_bytes) * 100 > 95
+            for: 5m
+            labels:
+              severity: critical
+              component: storage
+            annotations:
+              summary: "PVC {{`{{`}} $labels.persistentvolumeclaim {{`}}`}} is critically full"
+              description: "PVC {{`{{`}} $labels.persistentvolumeclaim {{`}}`}} is {{`{{`}} $value {{`}}`}}% full"

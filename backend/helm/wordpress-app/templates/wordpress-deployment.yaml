@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: wordpress
+spec:
+  replicas: {{ .Values.wordpress.replicaCount }}
+  selector:
+    matchLabels:
+      app: wordpress
+  template:
+    metadata:
+      labels:
+        app: wordpress
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9253"
+    spec:
+      containers:
+      - name: wordpress
+        image: "{{ .Values.images.wordpress.repository }}:{{ .Values.images.wordpress.tag }}"
+        imagePullPolicy: {{ .Values.images.wordpress.pullPolicy }}
+        ports:
+        - containerPort: 9000
+          name: fastcgi
+        env:
+        - name: WORDPRESS_DB_HOST
+          value: {{ .Values.wordpress.env.WORDPRESS_DB_HOST | quote }}
+        - name: WORDPRESS_DB_NAME
+          value: {{ .Values.wordpress.env.WORDPRESS_DB_NAME | quote }}
+        - name: WORDPRESS_DB_USER
+          value: {{ .Values.wordpress.env.WORDPRESS_DB_USER | quote }}
+        - name: WORDPRESS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wordpress-secrets
+              key: WORDPRESS_DB_PASSWORD
+        - name: REDIS_HOST
+          value: {{ .Values.wordpress.env.REDIS_HOST | quote }}
+        - name: REDIS_PORT
+          value: {{ .Values.wordpress.env.REDIS_PORT | quote }}
+        envFrom:
+        - secretRef:
+            name: wordpress-secrets
+        volumeMounts:
+        - name: wordpress-storage
+          mountPath: /var/www/html/wp-content
+        resources:
+          {{- toYaml .Values.wordpress.resources | nindent 10 }}
+        livenessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      - name: php-fpm-exporter
+        image: hipages/php-fpm_exporter:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PHP_FPM_SCRAPE_URI
+          value: tcp://127.0.0.1:9000/status
+        ports:
+        - containerPort: 9253
+          name: metrics
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+      volumes:
+      - name: wordpress-storage
+        {{- if .Values.wordpress.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: wordpress-pvc
+        {{- else }}
+        emptyDir: {}
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: wordpress
+  ports:
+  - port: 9000
+    targetPort: 9000
+    name: fastcgi
+  type: ClusterIP

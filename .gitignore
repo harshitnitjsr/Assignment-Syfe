@@ -1,0 +1,51 @@
+# Build directories
+**/node_modules/
+**/dist/
+**/build/
+
+# Docker
+**/.dockerignore
+**/Dockerfile.swp
+
+# Kubernetes
+**/*.swp
+**/*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets (NEVER commit these!)
+**/secrets.yaml
+**/*-secret.yaml
+**/credentials.json
+**/.env
+**/*.pem
+**/*.key
+
+# Helm
+**/*.tgz
+**/charts/*.lock
+
+# Logs
+**/*.log
+**/logs/
+
+# Backup files
+**/*.backup
+**/*.bak
+**/*.sql
+
+# Terraform (if used)
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.backup
+
+# Temporary files
+**/tmp/
+**/temp/

@@ -1,0 +1,95 @@
+# Local Development Values for Monitoring Stack - FIXED
+# Use these values for Docker Desktop with hostpath storage class
+
+namespace: monitoring
+
+# Prometheus configuration
+prometheus:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: prom/prometheus
+    tag: v2.45.0
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+  
+  retention: 7d  # Reduced from 15d for local
+  
+  persistence:
+    enabled: true
+    size: 5Gi  # Reduced from 50Gi
+    storageClass: "hostpath"  # Changed from "standard"
+  
+  service:
+    type: NodePort  # Changed from ClusterIP
+    port: 9090
+    nodePort: 30090  # Access via http://localhost:30090
+
+  # Scrape configurations
+  scrapeInterval: 30s
+  evaluationInterval: 30s
+
+# Grafana configuration
+grafana:
+  enabled: false  # Disabled (remove Grafana pods)
+  replicaCount: 0
+  
+  image:
+    repository: grafana/grafana
+    tag: 10.0.0
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  
+  persistence:
+    enabled: true
+    size: 2Gi  # Reduced from 10Gi
+    storageClass: "hostpath"  # Changed from "standard"
+  
+  service:
+    type: NodePort  # Changed from LoadBalancer
+    port: 3000
+    nodePort: 30300  # Access via http://localhost:30300
+  
+  # Admin credentials (change these!)
+  adminUser: admin
+  adminPassword: admin123
+
+# Node Exporter - DISABLED for local
+nodeExporter:
+  enabled: false  # Disabled for local development
+
+# kube-state-metrics - DISABLED for local
+kubeStateMetrics:
+  enabled: false  # Disabled for local development
+
+# Alert Manager - DISABLED for local
+alertmanager:
+  enabled: false  # Disabled for local development
+
+# ServiceMonitor for WordPress components
+serviceMonitors:
+  enabled: true
+  wordpress:
+    enabled: true
+    interval: 30s
+  nginx:
+    enabled: true
+    interval: 30s
+  mysql:
+    enabled: true
+    interval: 30s
