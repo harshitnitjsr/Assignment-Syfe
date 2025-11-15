@@ -1,6 +1,6 @@
-# Metrics Catalog: WordPress, Apache, Nginx, and Kubernetes
+# Metrics Catalog: WordPress, Nginx, and Kubernetes
 
-This document defines the required metrics to monitor a WordPress application, its web server (Nginx or Apache), and the underlying Kubernetes cluster, with Prometheus as the time-series database and Grafana for visualization.
+This document defines the required metrics to monitor a WordPress application, its web server (Nginx), and the underlying Kubernetes cluster, with Prometheus as the time-series database and Grafana for visualization.
 
 Use this as your single source of truth for what to collect, how to scrape it, what to graph, and baseline alert thresholds.
 
@@ -229,6 +229,5 @@ PVC almost full (example threshold)
   - Port: 9253, annotations applied via Helm
 - mysqld-exporter
   - Service: `mysql-exporter:9104`
-- Apache (if used)
-  - `apache_exporter` scraping mod_status (e.g., http://apache:80/server-status?auto)
+
 
