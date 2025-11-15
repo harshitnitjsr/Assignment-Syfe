@@ -5,6 +5,7 @@ Production-grade WordPress on Kubernetes with Nginx (OpenResty), MySQL, Redis, P
 - WordPress (local): http://localhost:30080
 - Prometheus: http://localhost:30090
 - Grafana: http://localhost:30300 (admin / admin123)
+ - Metrics Catalog: [METRICS_CATALOG.md](./METRICS_CATALOG.md)
 
 ## Folder structure
 
@@ -99,7 +100,7 @@ If you only want to (re)start monitoring services:
   - Nginx: 12708 or 9614
   - PHP‑FPM: 11019 or 12162
   - MySQL: 7362 or 14057
-4) Or create panels using queries in `METRICS_CATALOG.md`.
+4) Or create panels using queries in [METRICS_CATALOG.md](./METRICS_CATALOG.md).
 
 ## Metrics you get out-of-the-box
 
@@ -108,7 +109,7 @@ If you only want to (re)start monitoring services:
 - MySQL: connections, QPS, slow queries (mysqld-exporter)
 - Kubernetes: core pod/node metrics (plus optional node-exporter, kube-state-metrics)
 
-See full list and PromQL in `METRICS_CATALOG.md`.
+See full list and PromQL in [METRICS_CATALOG.md](./METRICS_CATALOG.md).
 
 ## Troubleshooting
 
